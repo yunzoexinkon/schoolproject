@@ -1,34 +1,34 @@
 export default {
   template: /*html*/ `
-        <ul>
-            <li v-for="title in titles" >
-            <span id=titles>{{title.text1}}</span>
-            </li>
-        </ul>
-        <p class=aside1>
-            <ul>
-                <li v-for="asidetext in asidetexts">
-                <span style="vertical-align:middle"><img v-bind:src="asidetext.img" width="30" height="30">{{asidetext.text1}}</span>
-                </li>
-            </ul>
-            <ul>
-                <li v-for="timetext in timetexts">
-                <span>{{timetext.time}}</span>
-                </li>
-            </ul>
-        </p>
-        <div class="echart" id="mychart" style="width: 900px; height: 600px"></div>
-  `,
+          <ul>
+              <li v-for="title in titles" >
+              <span id=titles>{{title.text1}}</span>
+              </li>
+          </ul>
+          <p class=aside1>
+              <ul>
+                  <li v-for="asidetext in asidetexts">
+                  <span style="vertical-align:middle"><img v-bind:src="asidetext.img" width="30" height="30">{{asidetext.text1}}</span>
+                  </li>
+              </ul>
+              <ul>
+                  <li v-for="timetext in timetexts">
+                  <span>{{timetext.time}}</span>
+                  </li>
+              </ul>
+          </p>
+          <div class="echart" id="mychart" style="width: 900px; height: 600px"></div>
+    `,
   data() {
     /*var arr1 = [];
-    var arr2 = [];
-    for (let i = 0; i < 50; i++) {
-      arr1.push(this.tmpv(i));
-      arr2.push(this.orpv(i));
-    }*/
+      var arr2 = [];
+      for (let i = 0; i < 50; i++) {
+        arr1.push(this.tmpv(i));
+        arr2.push(this.orpv(i));
+      }*/
     return {
       /*array1: arr1,
-      array2: arr2,*/
+        array2: arr2,*/
       titles: [
         { id: 1, text1: "● 溫度正常" },
         { id: 2, text1: "● orp正常" },
@@ -43,7 +43,7 @@ export default {
         { id: 3, time: "在 XXXX/XX/XX XX:XX:XX 時" },
         { id: 4, time: "在 XXXX/XX/XX XX:XX:XX 時" },
       ],
-      url: "http://192.168.0.114:5000/value",
+      url: "https://iwdvc39axk.execute-api.us-east-1.amazonaws.com/default/getvalue",
     };
   },
   mounted() {
@@ -108,13 +108,14 @@ export default {
       var arr2 = [];
       var request = new XMLHttpRequest();
       let url = this.url;
-      var datan = [];
+      var valdata = [];
+      var data = [];
       var now;
       var tmp;
       var orp;
       var num;
       var tempthreshold = 20;
-      var orpthreshold = 800;
+      var orpthreshold = 1000;
       var tempreturn = 24.5;
       var orpreturn = 480;
       var tmpnum = 0;
@@ -122,19 +123,32 @@ export default {
       var tmpmod = 0;
       var orpmod = 0;
       var warntimes = 10;
+      var number;
+      var currecttime;
       let self = this;
       request.open("GET", url, false);
       request.onload = function reqOnload() {
         const test = this.responseText;
-        datan = JSON.parse(test);
+        data = JSON.parse(test);
+        //console.log(data);
       };
       request.send();
+      //console.log(data);
+
       for (var i = 0; i < 50; i++) {
-        //console.log(data[10].Temperature);
-        num = datan.length - 50 + i;
-        tmp = datan[num].Temperature;
-        orp = datan[num].Orpvalue;
-        now = datan[num].Nowtime;
+        num = 49 - i;
+        //console.log(data[num].Temperature);
+        tmp = data[num].Temperature.N;
+        orp = data[num].Orpvalue.N;
+        now = data[num].Timestamp.S;
+        currecttime = new Date(now);
+        if (i > 0) {
+          //console.log(arr1[0].name);
+          number = arr1.length - 1;
+          if (arr1[number].name == now) {
+            currecttime.setTime(currecttime.getTime() + 10 * 1000);
+          }
+        }
         if (tmp > tempthreshold) {
           if (tmpnum < warntimes) {
             this.updatetitles(1);
@@ -181,9 +195,11 @@ export default {
           this.updatetitles(4);
           this.updateasidetexts(4);
         }
-        arr1.push({ name: now, value: [now, tmp] });
-        arr2.push({ name: now, value: [now, orp] });
+        //console.log(currecttime);
+        arr1.push({ name: currecttime, value: [currecttime, tmp] });
+        arr2.push({ name: currecttime, value: [currecttime, orp] });
       }
+      //console.log(arr1.length);
       const option = {
         title: { text: "Temperature & ORP" },
         length: {},
@@ -201,8 +217,13 @@ export default {
           {
             type: "time",
             name: "time",
-            nameGap: 50,
+            nameTextStyle: {
+              fontSize: 24, // 设置 x 轴名称的字体大小
+              color: "red",
+            },
+            nameGap: 30,
             axisLabel: {
+              fontSize: 12,
               show: true,
             },
             splitLine: {
@@ -221,9 +242,14 @@ export default {
             nameLocation: "end",
             position: "left",
             name: "temp",
+            nameTextStyle: {
+              fontSize: 24, // 设置 y 轴名称的字体大小
+              color: "red",
+            },
             //boundaryGap: ['20%', '20%'],
             //splitNumber: 5,
             axisLabel: {
+              fontSize: 12,
               show: true,
               interval: "auto",
               formatter: "{value} ℃",
@@ -232,14 +258,19 @@ export default {
           {
             type: "value",
             min: 0,
-            max: 1200,
-            interval: 200,
+            max: 1500,
+            interval: 250,
             nameLocation: "end",
             position: "right",
             name: "ORP",
+            nameTextStyle: {
+              fontSize: 24, // 设置 y 轴名称的字体大小
+              color: "red",
+            },
             //boundaryGap: ['20%', '40%'],
             //splitNumber: 5,
             axisLabel: {
+              fontSize: 12,
               show: true,
               interval: "auto",
               formatter: "{value} ",
@@ -324,51 +355,74 @@ export default {
       } //values.js 286
       setInterval(function () {
         for (var i = 0; i < 1; i++) {
-          function tmpv(num) {
+          function tmpv() {
             var request = new XMLHttpRequest();
-            //let url = self.url;
-            //let url = "http://192.168.0.113:5000/value";
             var Temperature;
-            var now;
+            var inserttime;
             request.open("GET", url, false);
             request.onload = function reqOnload() {
               const test = this.responseText;
               const data = JSON.parse(test);
-              const Num = data.length - 50 + num;
-              Temperature = data[Num].Temperature;
-              now = data[Num].Nowtime;
+              Temperature = data[0].Temperature.N;
+              inserttime = data[0].Timestamp.S;
             };
             request.send();
-            return {
-              name: now,
-              value: [now, Temperature],
-            };
+            console.log(inserttime, arr1[49].name);
+            if (inserttime > arr1[49].name) {
+              inserttime = new Date(inserttime);
+              console.log(2);
+              return {
+                name: inserttime,
+                value: [inserttime, Temperature],
+              };
+            } else {
+              currecttime = new Date(arr1[49].name);
+              currecttime.setTime(currecttime.getTime() + 10 * 1000);
+              console.log(1);
+              return {
+                name: currecttime,
+                value: [currecttime, Temperature],
+              };
+            }
           }
-          function orpv(num) {
+          function orpv() {
             var request = new XMLHttpRequest();
-            //let url = self.url;
-            //let url = "http://192.168.0.113:5000/value";
             var Orpvalue;
-            var now;
+            var inserttime;
             request.open("GET", url, false);
             request.onload = function reqOnload() {
               const test = this.responseText;
               const data = JSON.parse(test);
-              const Num = data.length - 50 + num;
-              Orpvalue = data[Num].Orpvalue;
-              now = data[Num].Nowtime;
+              Orpvalue = data[0].Orpvalue.N;
+              inserttime = data[0].Timestamp.S;
             };
             request.send();
-            return {
-              name: now,
-              value: [now, Orpvalue],
-            };
+            if (inserttime > arr2[49].name) {
+              inserttime = new Date(inserttime);
+              return {
+                name: inserttime,
+                value: [inserttime, Orpvalue],
+              };
+            } else {
+              currecttime = new Date(arr2[49].name);
+              currecttime.setTime(currecttime.getTime() + 10 * 1000);
+              return {
+                name: currecttime,
+                value: [currecttime, Orpvalue],
+              };
+            }
           }
+          console.log(arr1[46]);
+          console.log(arr1[47]);
+          console.log(arr1[48]);
+          console.log(arr1[49]);
+          //console.log(arr1.length);
+          arr1.push(tmpv());
+          arr2.push(orpv());
+          //console.log(arr1.length);
           arr1.shift();
           arr2.shift();
-          arr1.push(tmpv(49));
-          arr2.push(orpv(49));
-          console.log(arr1);
+          //console.log(arr1.length);
           tmp = arr1[49].value[1];
           orp = arr2[49].value[1];
           //console.log(tmp);
@@ -384,7 +438,7 @@ export default {
               tmpmod = 1;
             } else {
               tmpnum = tmpnum + 1;
-              console.log(tmpnum);
+              //console.log(tmpnum);
             }
           } else if (tmp == tempreturn) {
             self.updatetitles(3);
@@ -425,7 +479,7 @@ export default {
         myChart.setOption({
           series: [{ data: arr1 }, { data: arr2 }],
         });
-      }, 1000);
+      }, 10000);
       if (option && typeof option === "object") {
         myChart.setOption(option);
       }
