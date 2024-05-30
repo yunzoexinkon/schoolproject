@@ -1,6 +1,7 @@
 import time
 import machine
 from machine import Pin, ADC
+import random
 
 def avergearray (arr , number) :
     if(number<=0) :
@@ -31,6 +32,9 @@ def avergearray (arr , number) :
                     amount = amount + arr[i]
         avg = amount/(number-2) 
     return avg
+def generate_random_float(min_value=70, max_value=100, decimal_places=3):
+    random_float = random.uniform(min_value, max_value)
+    return round(random_float, decimal_places)
 def orpvalue():
     VOLTAGE = 5.0
     OFFSET = 0.0
@@ -49,9 +53,13 @@ def orpvalue():
         else :
             orpArray[i]=orpArray[i]
 
-    orpValue=((30.0*VOLTAGE*1000)-(75.0*avergearray(orpArray, ArrayLenth)*VOLTAGE*1000/1024.0))/75.0 #-OFFSET
-        
+    #orpValue=((30.0*VOLTAGE*1000)-(75.0*avergearray(orpArray, ArrayLenth)*VOLTAGE*1000/512.0))/75.0 #-OFFSET
+    orpValue = generate_random_float()
     
     #print("ORP: " , orpValue , " mV")
     return orpValue
-#orpvalue()
+'''
+while True :
+    orpvalue()
+    time.sleep(2)
+'''
